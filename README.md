@@ -131,8 +131,8 @@ Financial-Performance-Predictor/
 
 ---
 
-[GitHub stars
-[GitHub forks
+[GitHub stars]
+[GitHub forks]
 
 Citations:
 [1] https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/33749695/57c68a53-c3dc-4682-beb7-14a101137415/Project_Report.pdf
