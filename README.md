@@ -123,10 +123,6 @@ Financial-Performance-Predictor/
 ```
 
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgments
 
 - Illinois Institute of Technology
@@ -134,8 +130,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Kaggle for providing the dataset
 
 ---
-
-For more information, please check our [project wiki](https://github.com/yourusername/Financial-Performance-Predictor/wiki) or open an [issue](https://github.com/yourusername/Financial-Performance-Predictor/issues).
 
 [GitHub stars
 [GitHub forks
