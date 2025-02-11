@@ -42,7 +42,7 @@ Sales Distribution
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/Financial-Performance-Predictor.git
+git clone https://github.com/NeerajBuneeti/Financial-Performance-Predictor.git
 cd Financial-Performance-Predictor
 pip install -r requirements.txt
 ```
