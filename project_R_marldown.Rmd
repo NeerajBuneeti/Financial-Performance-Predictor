@@ -1,0 +1,1094 @@
+---
+title: "Project"
+author: "Charan"
+date: "2024-04-18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+library(knitr)
+install.packages("caret")
+library(caret)
+```
+
+
+
+
+```{r}
+library(data.table)
+my_data <- fread("F:/CSP_571_Data_Preparation_Analysis/project/archive/Financials.csv")
+#fread -> faster loading of large datasets
+head(my_data)
+
+```
+
+
+
+```{r}
+# Remove $, commas, and any extra spaces, then convert to numeric
+my_data$Units_Sold <- as.numeric(gsub("[\\$,\\s]", "", my_data$Units_Sold))
+my_data$Manufacturing_Price <- as.numeric(gsub("[\\$,\\s]", "", my_data$Manufacturing_Price))
+my_data$Sale_Price <- as.numeric(gsub("[\\$,\\s]", "", my_data$Sale_Price))
+my_data$Gross_Sales <- as.numeric(gsub("[\\$,\\s]", "", my_data$Gross_Sales))
+my_data$Sales <- as.numeric(gsub("[\\$,\\s]", "", my_data$Sales))
+my_data$Discounts <- as.numeric(gsub("[\\$,\\s]", "", my_data$Discounts))
+
+my_data$COGS <- as.numeric(gsub("[\\$,\\s]", "", my_data$COGS))
+my_data$Profit <- as.numeric(gsub("[\\$,\\s]", "", my_data$Profit))
+
+
+```
+
+
+```{r}
+# Assuming df is your data frame and column_name is your specific column
+my_data$Discount_Band[my_data$Discount_Band == "None"] <- NA
+my_data <- na.omit(my_data)
+
+
+```
+
+
+```{r}
+# Simple imputation with the mean
+my_data$Discount_Band[is.na(my_data$Discount_Band)] <- mean(my_data$Discount_Band, na.rm = TRUE)
+
+# For categorical data, you might use the mode (most frequent value)
+# This requires the modeest function from the 'modeest' package
+install.packages("modeest")
+library(modeest)
+mode_value <- mfv(my_data$Discount_Band)
+my_data$Discount_Band[is.na(my_data$Discount_Band)] <- mode_value
+
+# You can explicitly convert 'None' to a factor level if not already
+my_data$Discount_Band <- as.factor(my_data$Discount_Band)
+levels(my_data$Discount_Band) <- c(levels(my_data$Discount_Band), "None")
+
+# Summarize missing values
+summary(my_data$Discount_Band)
+table(is.na(my_data$Discount_Band))
+
+
+```
+
+```{r}
+#my_data$Country <- as.factor(my_data$Country)
+#my_data$Product <- as.factor(my_data$Product)
+#my_data$Segment <- as.factor(my_data$Segment)
+#my_data$Month_Name <- as.factor(my_data$Month_Name)
+#my_data$Discount_Band <- as.factor(my_data$Discount_Band)
+#my_data$Discounts <- as.factor(my_data$Discounts)
+
+
+```
+
+
+```{r}
+# Check for NA values
+sum(is.na(my_data$Sales))
+
+# Check for NaN values
+sum(is.nan(my_data$Sales))
+
+# Check for Inf values
+sum(is.infinite(my_data$Sales))
+
+
+# Check for NA values
+sum(is.na(my_data$Discount_Band))
+
+# Check for NaN values
+sum(is.nan(my_data$Discount_Band))
+
+# Check for Inf values
+sum(is.infinite(my_data$Discount_Band))
+
+# Removing rows with NA, NaN, or Inf in 'Sales'
+my_data[!is.na(my_data$Sales) & !is.nan(my_data$Sales) & !is.infinite(my_data$Sales), ]
+
+my_data[!is.na(my_data$Discount_Band) & !is.nan(my_data$Discount_Band) & !is.infinite(my_data$Discount_Band), ]
+
+```
+
+```{r}
+my_data
+```
+
+
+
+
+```{r}
+# Install and load the ggplot2 package for plotting
+library(ggplot2)
+
+# Setting the theme for plots (similar to setting the style in seaborn)
+theme_set(theme_gray())
+
+```
+
+
+```{r}
+
+# Set the plot size
+# Set the plot size
+options(repr.plot.width=10, repr.plot.height=5)
+
+# Create the plot
+ggplot(my_data, aes(x=Segment, y=`Gross_Sales`, fill=Country)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(title="Gross Sales by Segment and Country") +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))  # Rotate x-axis labels for better readability
+
+```
+
+```{r}
+
+# Creating a line plot with x-axis units set to 2
+ggplot(my_data, aes(x=`Month_Number`, y=`Gross_Sales`)) +
+  geom_line() +
+  labs(title="Gross Sales Over Months") +
+  xlab("Month Number") +
+  ylab("Gross Sales") +
+  scale_x_continuous(breaks = seq(1, 12, by = 2))  # Set x-axis units to 2
+```
+```{r}
+# Create the line plot
+p <- ggplot(my_data, aes(x=Year, y=Gross_Sales, group=1)) +
+  geom_line() +
+  labs(title="Line Plot of Gross Sales Over Time", x="Year", y="Gross Sales") +
+  theme_minimal() +  # Use a minimal theme for the plot
+  scale_y_continuous(limits = c(0, 50000), breaks = seq(0, 50000, by = 5000))  # Set y-axis limits and breaks
+
+# Save the plot with the specified size
+ggsave("line_plot.png", plot=p, width=10, height=6, units="in")
+print(p)
+
+
+```
+
+```{r}
+# Creating a bar plot with adjusted bar width
+ggplot(my_data, aes(x=Country, y=`Gross_Sales`, fill=Country)) +
+  geom_bar(stat="identity", position="dodge", width=0.8) +  # Adjust bar width as needed
+  labs(title="Gross Sales by Country") +
+  theme(axis.text.x = element_text(angle = 15, hjust = 1))  
+```
+
+
+```{r}
+
+library(scales)
+# Creating a bar plot
+ggplot(my_data, aes(x=Country, y=Profit, fill=Country)) +
+  geom_bar(stat="identity", position="dodge") +
+  labs(title="Profit by Country") +
+  theme(axis.text.x = element_text(angle = 15, hjust = 1)) +  # Rotate x-axis labels for better readability
+  scale_y_continuous(labels = comma)  # Format y-axis labels with commas for thousands separator
+```
+
+
+```{r}
+
+# Create the scatter plot
+ggplot(my_data, aes(x=`Gross_Sales`, y=Profit)) +
+  geom_point() +
+  labs(title='Scatter Plot of Gross Sales vs. Profit', x='Gross Sales', y='Profit') +
+  theme_minimal()  # Use a minimal theme for the plot
+```
+
+
+```{r}
+
+# Create a data frame with counts of unique values in the 'Segment' column
+segment_counts <- as.data.frame(table(my_data$Segment))
+
+# Create the pie chart
+ggplot(segment_counts, aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  labs(title="Pie Chart of Segments", fill="Segment") +
+  theme_void() +
+  geom_text(aes(label=scales::percent(Freq/sum(Freq))), position=position_stack(vjust=0.5))
+```
+
+
+
+
+```{r}
+# Create the box plot
+ggplot(my_data, aes(x=Segment, y=`Gross_Sales`)) +
+  geom_boxplot() +
+  labs(title="Box Plot of Gross Sales by Segment", x="Segment", y="Gross Sales") +
+  theme_minimal()+  # Use a minimal theme for the plot
+  scale_fill_brewer(palette="Set1")  # Use a color palette for fill colors
+```
+```{r}
+ggplot(my_data, aes(x = `Gross_Sales`)) +
+  geom_histogram(bins = 20, fill = "steelblue", color = "black") +
+  geom_density(color = "red", size = 1) +
+  ggtitle("Histogram of Gross Sales") +
+  xlab("Gross Sales") +
+  ylab("Frequency") +
+  theme_classic()
+```
+
+
+```{r}
+# Set up the size of the plot
+options(repr.plot.width=10, repr.plot.height=6)
+
+# Create a scatter plot of Discounts vs Profit
+plot(my_data$Discounts, my_data$Profit, pch=16, col="blue", xlab="Discounts", ylab="Profit", main="Discounts vs Profit")
+grid()
+
+```
+
+
+```{r}
+library(ggplot2)
+
+# Group by Discount_Band and calculate mean of Sales
+discount_band_avg_sales <- aggregate(Sales ~ Discount_Band, data = my_data, mean)
+
+# Set up the size of the plot
+options(repr.plot.width=6, repr.plot.height=10)
+
+# Create bar plot for average Sales by Discount Band
+ggplot(discount_band_avg_sales, aes(x = Discount_Band, y = Sales)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Average Sales by Discount Band", x = "Discount Band", y = "Average Sales") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for better readability
+        axis.title.y = element_blank())  # Remove y-axis title
+
+
+
+```
+```{r}
+# Group by Discount_Band and calculate mean of Profit
+discount_band_avg_profit <- aggregate(Profit ~ Discount_Band, data = my_data, mean)
+
+# Set up the size of the plot
+options(repr.plot.width=8, repr.plot.height=6)
+
+# Create bar plot for average Profit by Discount Band
+ggplot(discount_band_avg_profit, aes(x = Discount_Band, y = Profit)) +
+  geom_bar(stat = "identity", fill = "green") +
+  labs(title = "Average Profit by Discount Band", x = "Discount Band", y = "Average Profit") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for better readability
+        axis.title.y = element_blank())  # Remove y-axis title
+
+```
+
+
+```{r}
+
+library(gplots)
+
+if (!requireNamespace("corrplot", quietly = TRUE)) {
+  install.packages("corrplot")
+}
+library(corrplot)
+# Assuming 'my_data' is your dataset
+subset_df <- my_data[, c("Manufacturing_Price", "Sale_Price", "Sales", "Profit")]
+
+# Remove rows with missing values
+subset_df <- na.omit(subset_df)
+
+# Calculate correlation matrix
+correlation_matrix <- cor(subset_df)
+
+# Plot correlation matrix as heatmap
+corrplot(correlation_matrix, method = "color")
+
+```
+
+
+
+
+##Regression
+#Linear Regression
+
+
+```{r}
+my_data$Discount_Band
+```
+
+```{r}
+# Remove $, commas, and any extra spaces, then convert to numeric
+my_data$Units_Sold <- as.numeric(gsub("[\\$,\\s]", "", my_data$Units_Sold))
+my_data$Manufacturing_Price <- as.numeric(gsub("[\\$,\\s]", "", my_data$Manufacturing_Price))
+my_data$Sale_Price <- as.numeric(gsub("[\\$,\\s]", "", my_data$Sale_Price))
+my_data$Gross_Sales <- as.numeric(gsub("[\\$,\\s]", "", my_data$Gross_Sales))
+my_data$Sales <- as.numeric(gsub("[\\$,\\s]", "", my_data$Sales))
+my_data$Discounts <- as.numeric(gsub("[\\$,\\s]", "", my_data$Discounts))
+
+my_data$COGS <- as.numeric(gsub("[\\$,\\s]", "", my_data$COGS))
+my_data$Profit <- as.numeric(gsub("[\\$,\\s]", "", my_data$Profit))
+
+
+```
+
+
+```{r}
+# Assuming df is your data frame and column_name is your specific column
+my_data$Discount_Band[my_data$Discount_Band == "None"] <- NA
+my_data <- na.omit(my_data)
+
+
+```
+
+
+```{r}
+# Simple imputation with the mean
+my_data$Discount_Band[is.na(my_data$Discount_Band)] <- mean(my_data$Discount_Band, na.rm = TRUE)
+
+# For categorical data, you might use the mode (most frequent value)
+# This requires the modeest function from the 'modeest' package
+install.packages("modeest")
+library(modeest)
+mode_value <- mfv(my_data$Discount_Band)
+my_data$Discount_Band[is.na(my_data$Discount_Band)] <- mode_value
+
+# You can explicitly convert 'None' to a factor level if not already
+my_data$Discount_Band <- as.factor(my_data$Discount_Band)
+levels(my_data$Discount_Band) <- c(levels(my_data$Discount_Band), "None")
+
+# Summarize missing values
+summary(my_data$Discount_Band)
+table(is.na(my_data$Discount_Band))
+
+
+```
+
+```{r}
+#my_data$Country <- as.factor(my_data$Country)
+#my_data$Product <- as.factor(my_data$Product)
+#my_data$Segment <- as.factor(my_data$Segment)
+#my_data$Month_Name <- as.factor(my_data$Month_Name)
+#my_data$Discount_Band <- as.factor(my_data$Discount_Band)
+#my_data$Discounts <- as.factor(my_data$Discounts)
+
+
+```
+
+
+```{r}
+# Check for NA values
+sum(is.na(my_data$Sales))
+
+# Check for NaN values
+sum(is.nan(my_data$Sales))
+
+# Check for Inf values
+sum(is.infinite(my_data$Sales))
+
+
+# Check for NA values
+sum(is.na(my_data$Discount_Band))
+
+# Check for NaN values
+sum(is.nan(my_data$Discount_Band))
+
+# Check for Inf values
+sum(is.infinite(my_data$Discount_Band))
+
+# Removing rows with NA, NaN, or Inf in 'Sales'
+my_data[!is.na(my_data$Sales) & !is.nan(my_data$Sales) & !is.infinite(my_data$Sales), ]
+
+my_data[!is.na(my_data$Discount_Band) & !is.nan(my_data$Discount_Band) & !is.infinite(my_data$Discount_Band), ]
+
+```
+
+```{r}
+my_data
+```
+
+
+
+
+
+
+
+
+```{r}
+set.seed(123)  # for reproducibility
+train_index <- sample(1:nrow(my_data), 0.8 * nrow(my_data))
+train_data <- my_data[train_index, ]
+test_data <- my_data[-train_index, ]
+
+```
+
+
+
+```{r}
+train_data
+```
+
+
+
+```{r}
+test_data
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# Fit a linear regression model
+model_lm <- lm(Sales ~ ., data = train_data)
+
+# Summary of the model
+summary(model_lm)
+
+
+```
+
+
+
+```{r}
+# Predictions
+predictions <- predict(model_lm, newdata = test_data)
+
+# Compare predictions to actual
+library(Metrics)
+mse <- mse(test_data$Sales, predictions)
+print(paste("Mean Squared Error:", mse))
+
+```
+
+
+#hyper parameter tuning for linear regression
+```{r}
+
+
+library(caret)
+
+# Define training control
+train_control <- trainControl(
+  method = "cv",           # Use cross-validation
+  number = 5               # Number of folds in k-fold cross-validation
+)
+
+# Train the linear regression model
+model_lm <- train(
+  Profit ~ .,
+  data = train_data,
+  method = "lm",           # Linear regression method
+  trControl = train_control
+)
+
+# Summary of the model
+print(model_lm)
+
+# Make predictions on the test data
+predictions <- predict(model_lm, newdata = test_data)
+
+# Evaluate model performance
+mse <- mean((test_data$Profit - predictions)^2)
+print(paste("Mean Squared Error:", mse))
+
+```
+
+
+
+#Ensomble technique: random forest
+```{r}
+# Example of using a random forest model
+library(randomForest)
+model_rf <- randomForest(Sales ~ ., data = train_data, ntree=100)
+print(model_rf)
+
+# Prediction and evaluation
+rf_predictions <- predict(model_rf, newdata = test_data)
+rf_mse <- mse(test_data$Sales, rf_predictions)
+print(paste("Random Forest MSE:", rf_mse))
+
+```
+
+
+
+```{r}
+# Assuming you have a dataframe named 'test_data' containing both actual and predicted sales
+ggplot(test_data, aes(x = Sales, y = predictions)) +
+  geom_point() +
+  geom_smooth(method = lm, col = "blue") +
+  labs(title = "Actual vs Predicted Sales", x = "Actual Sales", y = "Predicted Sales")
+
+
+```
+
+
+
+```{r}
+
+ggplot(test_data, aes(x = Sales, y = predictions)) +
+  geom_point() +
+  labs(title = "Actual vs Predicted Sales", x = "Actual Sales", y = "Predicted Sales")
+
+```
+
+
+#Decision Tree    
+```{r}
+library(rpart)
+
+# Fit the Decision Tree model
+model_dt <- rpart(Profit ~ ., data = train_data, method = "anova")
+
+# Make predictions on the test data
+predictions <- predict(model_dt, newdata = test_data)
+
+# Evaluate model performance
+library(Metrics)
+mse <- mse(test_data$Profit, predictions)
+print(paste("Mean Squared Error:", mse))
+
+```
+
+
+
+```{r}
+# Visualize the Decision Tree
+library(rpart.plot)
+rpart.plot(model_dt)
+
+
+# Feature importance
+importance <- round(model_dt$variable.importance, 2)
+print(importance)
+
+```
+#hyperparameter tuning for Decsion tree
+```{r}
+library(caret)
+
+# Define training control
+train_control <- trainControl(
+  method = "cv",           # Use cross-validation
+  number = 10              # Number of folds in k-fold cross-validation
+)
+
+# Define the grid of hyperparameters to search
+grid <- expand.grid(
+  cp = seq(0.01, 0.5, by = 0.01)  # Adjust the range as needed
+)
+
+# Train the model
+model_dt <- train(
+  Profit ~ .,
+  data = train_data,
+  method = "rpart",         # Decision tree method
+  trControl = train_control,
+  tuneGrid = grid,
+  metric = "RMSE"           # Optimization metric
+)
+
+# Summary of best parameters and model
+print(model_dt)
+print(model_dt$bestTune)
+
+```
+
+```{r}
+# Make predictions on the test data using the tuned decision tree model
+predictions <- predict(model_dt, newdata = test_data)
+
+# Calculate mean squared error
+mse <- mean((test_data$Profit - predictions)^2)
+
+# Print mean squared error
+print(paste("Mean Squared Error:", mse))
+
+```
+
+
+
+
+
+#SVM
+```{r}
+library(e1071)
+
+# Fit the SVR model
+model_svr <- svm(Profit ~ ., data = train_data, kernel = "radial", cost = 1, epsilon = 0.1)
+# Make predictions on the test data
+predictions <- predict(model_svr, newdata = test_data)
+
+# Evaluate model performance
+library(Metrics)
+mse <- mse(test_data$Profit, predictions)
+print(paste("Mean Squared Error:", mse))
+
+
+```
+
+
+
+```{r}
+# Extract support vectors
+support_vectors <- model_svr$SV
+
+# Get indices of support vectors
+support_vector_indices <- model_svr$index
+
+# Print support vector indices
+print(support_vector_indices)
+
+# Print support vectors themselves
+print(support_vectors)
+
+# Plot actual vs. predicted values
+plot(test_data$Profit, predictions, xlab = "Actual Profit", ylab = "Predicted Profit", main = "Actual vs. Predicted Profit (SVR)")
+
+# Add diagonal line for reference
+abline(0, 1, col = "red")
+
+
+
+
+```
+
+#hyperparametr tuning for  SVM
+```{r}
+library(e1071)
+
+# Define a grid of hyperparameters to search
+tune_grid <- expand.grid(
+  cost = c(0.1, 1, 10),         # Adjust the range as needed
+  epsilon = c(0.01, 0.1, 1)     # Adjust the range as needed
+)
+
+# Initialize variables to store best model and its performance
+best_model <- NULL
+best_rmse <- Inf
+
+# Loop through each combination of hyperparameters
+for (i in 1:nrow(tune_grid)) {
+  # Fit SVR model with current hyperparameters
+  model_svr <- svm(Profit ~ ., data = train_data, kernel = "radial", cost = tune_grid$cost[i], epsilon = tune_grid$epsilon[i])
+  
+  # Make predictions on the test data
+  predictions <- predict(model_svr, newdata = test_data)
+  
+  # Calculate RMSE
+  rmse <- sqrt(mean((predictions - test_data$Profit)^2))
+  
+  # Check if current model is the best so far
+  if (rmse < best_rmse) {
+    best_rmse <- rmse
+    best_model <- model_svr
+  }
+}
+
+# Print best model and its RMSE
+print(best_model)
+print(paste("Best RMSE:", best_rmse))
+
+```
+
+
+```{r}
+  mse <- mean((predictions - test_data$Profit)^2)
+  best_mse <- Inf
+  # Check if current model is the best so far
+  if (mse < best_mse) {
+    best_mse <- mse
+    best_model <- model_svr
+  }
+
+# Print best model and its MSE
+print(best_model)
+print(paste("Best MSE:", best_mse))
+```
+
+
+
+
+#navie bayes
+```{r}
+library(e1071)
+
+# Fit the Naive Bayes model
+model_nb <- naiveBayes(Profit ~ ., data = train_data)
+
+```
+
+
+```{r}
+# Convert 'Profit' column in test_data to numeric
+test_data$Profit <- as.numeric(as.character(test_data$Profit))
+
+# Make predictions on the test data
+predictions <- predict(model_nb, newdata = test_data)
+
+# Evaluate model performance
+mse <- mean((test_data$Profit - as.numeric(as.character(predictions)))^2)
+print(paste("Mean Squared Error:", mse))
+
+
+```
+
+
+
+```{r}
+# Print conditional probabilities for each class
+#print(model_nb$tables)
+
+```
+
+
+#hyper paramter tuning for navie bayes
+#```{r}
+#
+#library(e1071)
+#library(caret)
+#
+## Define the range of values for the Laplace smoothing parameter
+#laplace_values <- seq(0, 1, by = 0.1)
+#
+## Create a tuning grid
+#tune_grid <- expand.grid(laplace = laplace_values)
+#
+## Define training control
+#train_control <- trainControl(
+#  method = "cv",           # Cross-validation
+#  number = 5               # Number of folds
+#)
+#
+## Train the Naive Bayes model with hyperparameter tuning
+#model_nb_tuned <- train(
+#  Profit ~ .,
+#  data = train_data,
+#  method = "nb",           # Naive Bayes method
+#  trControl = train_control,
+#  tuneGrid = tune_grid,
+#  metric = "RMSE"          # Evaluation metric (though less relevant for Naive Bayes)
+#)
+#
+## Print the tuned model
+#print(model_nb_tuned)
+#
+## Make predictions on the test data using the tuned model
+#predictions <- predict(model_nb_tuned, newdata = test_data)
+#
+## Evaluate model performance (though less meaningful for Naive Bayes)
+#mse <- mean((test_data$Profit - predictions)^2)
+#print(paste("Mean Squared Error:", mse))
+#
+#
+#
+#```
+#KNN
+
+```{r}
+train_data
+```
+
+
+```{r}
+
+
+library(data.table)
+library(class)
+
+# Assuming your data is already in a data.table format
+setDT(my_data)  # Convert data to data.table if it's not already
+
+# Define your predictors
+predictors <- c("Units_Sold", "Manufacturing_Price", "Sale_Price", 
+                "Gross_Sales", "Discounts", "Sales", "COGS", "Month_Number", "Year")
+
+# Convert categorical variables to numerical if needed
+my_data[, Country := as.numeric(factor(Country))]
+my_data[, Segment := as.numeric(factor(Segment))]
+my_data[, Product := as.numeric(factor(Product))]
+my_data[, Discount_Band := as.numeric(factor(Discount_Band))]
+
+# Add these encoded columns to predictors if they are not already included
+predictors <- c(predictors, "Country", "Segment", "Product", "Discount_Band")
+
+# Splitting data into training and testing (example split, adapt as necessary)
+set.seed(123)  # for reproducibility
+train_indices <- sample(seq_len(nrow(my_data)), size = 0.8 * nrow(my_data))
+train_data <- my_data[train_indices]
+test_data <- my_data[-train_indices]
+
+# Scaling the data - this is critical for kNN
+library(caret)
+preProcValues <- preProcess(train_data[, ..predictors], method = c("center", "scale"))
+train_scaled <- predict(preProcValues, train_data[, ..predictors])
+test_scaled <- predict(preProcValues, test_data[, ..predictors])
+
+# Define the target variable
+train_labels <- train_data$Profit
+test_labels <- test_data$Profit
+
+# Fit the kNN model
+model_knn <- knn(train = train_scaled, test = test_scaled, cl = train_labels, k = 5)
+
+# Predictions
+predictions <- knn(train = train_scaled, test = test_scaled, cl = train_labels, k = 5, prob = TRUE)
+
+# Evaluate model performance
+actual <- test_labels
+predicted <- predictions
+confusionMatrix <- table(Predicted = predicted, Actual = actual)
+print(confusionMatrix)
+
+
+```
+
+
+
+```{r}
+# Converting factors (if predictions are factors)
+if(is.factor(predictions)) {
+    predictions <- as.numeric(levels(predictions))[predictions]
+}
+
+# Root Mean Squared Error (RMSE)
+rmse_value <- rmse(test_labels, predictions)
+print(paste("Root Mean Squared Error (RMSE):", rmse_value))
+
+# Mean Absolute Error (MAE)
+mae_value <- mae(test_labels, predictions)
+print(paste("Mean Absolute Error (MAE):", mae_value))
+
+# R-squared - Function to calculate R-squared
+r_squared <- function(actual, predicted) {
+  ss_res <- sum((actual - predicted) ^ 2)
+  ss_tot <- sum((actual - mean(actual)) ^ 2)
+  r_squared <- 1 - (ss_res / ss_tot)
+  return(r_squared)
+}
+
+r2_value <- r_squared(test_labels, predictions)
+print(paste("R-squared:", r2_value))
+
+# Mean Squared Error (MSE)
+mse_value <- mean((test_labels - predictions)^2)
+print(paste("Mean Squared Error (MSE):", mse_value))
+
+
+
+```
+
+#hypertuning for KNN
+
+#```{r}
+#library(caret)
+#library(Metrics)
+#
+## Define training control
+#train_control <- trainControl(
+#  method = "cv",           # Use cross-validation
+#  number = 10              # Number of folds in k-fold cross-validation
+#)
+#
+## Define the grid of hyperparameters to search
+#grid <- expand.grid(k = 1:20)
+#
+## Train the model
+#model_knn <- train(
+#  train_scaled, train_labels,
+#  method = "knn",
+#  trControl = train_control,
+#  tuneGrid = grid,
+#  preProcess = "scale",   # Ensure data scaling
+#  metric = "MSE"         # Optimization metric
+#)
+#
+## Summary of best parameters and model
+#print(model_knn)
+#
+#
+#mse <- mean((test_labels - predictions)^2)
+#print(paste("Mean Squared Error (MSE):", mse))
+#```
+
+
+```{r}
+library(caret)
+library(Metrics)
+
+# Define training control
+train_control <- trainControl(
+  method = "cv",           # Use cross-validation
+  number = 10              # Number of folds in k-fold cross-validation
+)
+
+# Define the grid of hyperparameters to search
+grid <- expand.grid(k = 1:20)
+
+# Train the model
+model_knn <- train(
+  train_scaled, train_labels,
+  method = "knn",
+  trControl = train_control,
+  tuneGrid = grid,
+  preProcess = "scale",   # Ensure data scaling
+  metric = "RMSE"         # Optimization metric
+)
+
+# Summary of best parameters and model
+print(model_knn)
+
+# Extract the predictions from the tuned model
+predictions <- predict(model_knn, newdata = test_scaled)
+
+# Calculate the Mean Squared Error (MSE)
+mse <- mean((test_labels - predictions)^2)
+print(paste("Mean Squared Error (MSE):", mse))
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
