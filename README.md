@@ -122,11 +122,6 @@ Financial-Performance-Predictor/
 └── LICENSE
 ```
 
-## Contributors
-
-- [Poojith Reddy Annachedu](https://github.com/poojithreddy)
-- [Neeraj Vardhan Buneeti](https://github.com/neerajvardhan)
-- [Sai Charan Gangili](https://github.com/saicharan)
 
 ## License
 
